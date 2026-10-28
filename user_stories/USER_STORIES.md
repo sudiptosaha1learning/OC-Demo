@@ -2,13 +2,13 @@
 
 This backlog was autonomously generated and signed off by the S/4HANA Agile core agent pipeline.
 
-* **Generated At:** Wed, 28 Oct 2026 15:13:55 GMT
+* **Generated At:** Wed, 28 Oct 2026 15:16:50 GMT
 * **Total Backlog Items:** 4
 
 
 ---
 
-### [STORY-001] - Validate Overall Spend Limits against Authorized Expected Value on Service POs (Item Category B)
+### [STORY-001-9962] - Validate Overall Spend Limits against Authorized Expected Value on Service POs (Item Category B)
 * **Epic Group:** Procurement Governance & Financial Controls
 * **Actor:** As an Operational Purchaser (SAP_BR_PURCHASER)
 * **Action:** I want the system to validate that the Overall Limit does not exceed the Expected Spend Value on Item Category B purchase orders during pre-commit checks in ME21N and ME22N
@@ -63,7 +63,7 @@ Scenario 2: Hard stop rejection on post-release overall limit overrun (Control G
 
 ---
 
-### [STORY-002] - Maintain Dynamic Output Dispatch Cross-Reference Table (ZTXA_XREF)
+### [STORY-002-9962] - Maintain Dynamic Output Dispatch Cross-Reference Table (ZTXA_XREF)
 * **Epic Group:** Output Channel & Layout Configuration
 * **Actor:** As a Procurement Data Specialist (SAP_BR_BUPA_MASTER_SPECIALIST)
 * **Action:** I want a customizing cross-reference table to map Purchasing Organization and Document Type to target Adobe Form templates, branding logos, and output channels
@@ -118,7 +118,7 @@ Scenario 2: Validation of mandatory key and layout fields
 
 ---
 
-### [STORY-003] - Automated Dynamic Output Determination and Fallback Dispatch Engine via S/4HANA Output Control
+### [STORY-003-9962] - Automated Dynamic Output Determination and Fallback Dispatch Engine via S/4HANA Output Control
 * **Epic Group:** Automated Document Dispatch Framework
 * **Actor:** As an S/4HANA Integration Developer
 * **Action:** I want to implement BAdI APOC_DISPATCH_DOCUMENT to dynamically evaluate ZTXA_XREF and dispatch purchase orders with target Adobe layouts, logos, and channels, including default fallback routines
@@ -174,7 +174,7 @@ Scenario 2: Graceful fallback when ZTXA_XREF configuration is missing (EXP-002)
 
 ---
 
-### [STORY-004] - Supplier Master Business Partner EDI Communication Preference Resolution and Exception Handling
+### [STORY-004-9962] - Supplier Master Business Partner EDI Communication Preference Resolution and Exception Handling
 * **Epic Group:** Automated Document Dispatch Framework
 * **Actor:** As a Supplier Integration Specialist (SAP_BR_BUPA_MASTER_SPECIALIST)
 * **Action:** I want the output dispatch logic to evaluate Business Partner Supplier Role FLVN01 communication preferences and route to EDI when configured, falling back to email when unconfigured
