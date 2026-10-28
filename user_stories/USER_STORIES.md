@@ -2,229 +2,246 @@
 
 This backlog was autonomously generated and signed off by the S/4HANA Agile core agent pipeline.
 
-* **Generated At:** Wed, 28 Oct 2026 15:16:50 GMT
+* **Generated At:** Wed, 28 Oct 2026 16:31:07 GMT
 * **Total Backlog Items:** 4
 
 
 ---
 
-### [STORY-001-9962] - Validate Overall Spend Limits against Authorized Expected Value on Service POs (Item Category B)
-* **Epic Group:** Procurement Governance & Financial Controls
-* **Actor:** As an Operational Purchaser (SAP_BR_PURCHASER)
-* **Action:** I want the system to validate that the Overall Limit does not exceed the Expected Spend Value on Item Category B purchase orders during pre-commit checks in ME21N and ME22N
-* **Benefit:** so that unauthorized post-release spend inflation is prevented and compliance with corporate financial delegation of authority is strictly enforced
+### [STORY-001] - Configure Custom Output Cross-Reference Table (ZTXA_XREF) for Item Category B Documents
+* **Epic Group:** Procurement Spend Governance
+* **Actor:** Configuration Expert / Business Process Configuration Expert (SAP_BR_BPC_EXPERT)
+* **Action:** maintain purchasing document output routing parameters in custom table ZTXA_XREF by Purchasing Organization and Purchasing Document Type
+* **Benefit:** dynamic branding logos, Adobe Form layouts, and dispatch communication channels are systematically determined without hardcoding logic in core printing programs
 
 #### Acceptance Criteria
 
 ## SAP Components
-- SAP Modules: MM-PUR (Purchasing), MM-ES (Service Procurement)
-- Fiori App IDs: App ID F0842A - Manage Purchase Orders, SAP GUI Transactions ME21N / ME22N
-- Database Structures: EKKO, EKPO, ESUC (Limit Data), Table T160M (System Messages)
-- Message Class: ZTX_STP_MSG, Message 001
+- SAP Modules: MM-PUR, Cross-Application Components (Output Control)
+- Fiori App IDs: App ID F1481 - Custom Tables Maintenance (SM30/Custom CDS maintenance), App ID F0842A - Manage Purchase Orders
+- Custom Tables: ZTXA_XREF (Purchasing Document Output Cross-Reference Table)
+- S/4HANA Authorization Objects: S_TABU_DIS (Activity 02, 03), S_TABU_NAM
 
 ## Acceptance Criteria (Given-When-Then)
-Scenario 1: Successful limit verification on new PO creation (Item Category B)
-- Given an Operational Purchaser creates a purchase order with Document Type 'NB' and Item Category 'B' (Limit)
-- When the purchaser sets Expected Value (ESUC-EXP_VALUE) to $50,000 and Overall Limit (ESUC-SUMLIMIT) to $50,000
-- And triggers the pre-commit document check or save
-- Then the system allows the save operation, commits the purchase order, and triggers standard release strategy based on the authorized expected value of $50,000.
+Scenario 1: Successful Maintenance of Custom Table Entry
+- Given the Configuration Expert has authorization object S_TABU_DIS with Activity 02 for table ZTXA_XREF
+- When the user creates an entry with Purchasing Org '1010', Document Type 'NB', Logo ID 'CORP_LOGO_US', Form Layout 'ZPO_LIMIT_LAYOUT_US', Dispatch Medium 'MAIL', and Is Active = 'X'
+- Then the record is successfully saved in table ZTXA_XREF with valid UTC timestamp and sy-uname audit stamp.
 
-Scenario 2: Hard stop rejection on post-release overall limit overrun (Control Gap Check)
-- Given a purchase order with Item Category 'B' has been approved and released (EKKO-PROCSTAT = '05') with an Expected Value of $50,000 and Overall Limit of $50,000
-- When a purchaser attempts in ME22N or Manage Purchase Orders to increase the Overall Limit to $75,000 without increasing the approved Expected Value
-- And attempts to commit the changes
-- Then the system aborts the database commit flow and raises a hard error message TYPE 'E' (ZTX_STP_MSG 001): 'Overall Limit ($75,000) exceeds approved expected value ($50,000). Document release reset required.'
+Scenario 2: Validation of Mandatory Primary Key Fields
+- Given the user attempts to insert an entry in ZTXA_XREF
+- When either Purchasing Organization (EKORG) or Purchasing Document Type (BSART) is left blank
+- Then the system rejects the entry with an error message preventing database commitment.
 
 ## Dependencies
-- Activated PO Release Strategy configuration for Service Document Types.
-- Message Class ZTX_STP_MSG maintained in SE91.
+- Purchasing Organizations defined in table T024E.
+- Purchasing Document Types defined in table T161.
+- MIME repository graphic tokens registered in SE78/Adobe Document Services.
 
 ## Definition of Ready (DoR)
-- Functional approval matrix defined for service purchase orders.
-- Pre-commit extension point ME_PROCESS_PO_CUST analyzed and confirmed active in development client.
+- Custom data dictionary structure approved by SAP Basis and Enterprise Architecture.
+- Transport Request created and assigned to application package Z_PROC_EXT.
+- Baseline list of corporate purchasing organizations and document types documented in functional design.
 
 ## Definition of Done (DoD)
-- BAdI ME_PROCESS_PO_CUST method CHECK fully implemented and passing unit tests.
-- Clean Core automated testing verifies zero direct updates to EKKO/EKPO standard tables.
-- QA sign-off confirming commit rollback upon error ZTX_STP_MSG 001.
+- Table ZTXA_XREF created in S/4HANA development tenant with delivery class C and data maintenance allowed.
+- Table maintenance generator or custom maintenance app verified in development and QA environments.
+- Unit test transport imported and validated across standard QA clients without syntax errors.
 
 #### Clean Core Compliance & Architecture
 
 ## Technical Notes
-- Extension Hook: Standard BAdI ME_PROCESS_PO_CUST, method CHECK.
-- Limit Structure Access: Cast line item instance using interface IF_PO_LIMIT_ITEM_MM and invoke GET_LIMIT_DATA() to extract ESUC fields without querying raw database tables.
-- Error Propagation: Append error message via IF_PURCHASE_ORDER_MM->SET_ERROR_FLAG or macro MESSAGE ... TYPE 'E'.
+- Table ZTXA_XREF created under customer namespace (Z*) following ABAP Cloud guidelines.
+- Key fields: MANDT (CLNT 3), EKORG (CHAR 4), BSART (CHAR 4); Non-key attributes: LOGO_ID (CHAR 30), FORM_LAYOUT (CHAR 30), DISPATCH_MEDIUM (CHAR 4), IS_ACTIVE (CHAR 1), CREATED_BY (CHAR 12), CREATED_AT (DEC 15, UTC timestamp).
+- Delivery Class C ensures table content is managed via transportable customizing.
 
 ## Clean Core Compliance & Architecture
-- 100% Clean Core compliant via released SAP S/4HANA Cloud extensibility interface ME_PROCESS_PO_CUST.
-- Zero modifications to core purchasing database tables (EKKO, EKPO) or standard function modules.
+- Zero modification to standard purchasing configuration tables (T024E, T161).
+- Custom table resides strictly in custom customer package decoupled from standard SAP core repository objects.
+- Accessible via ABAP Cloud language version for on-stack developer extensibility without violating clean core upgrade boundaries.
 
 *Status: Approved and peer-validated.*
 
 ---
 
-### [STORY-002-9962] - Maintain Dynamic Output Dispatch Cross-Reference Table (ZTXA_XREF)
-* **Epic Group:** Output Channel & Layout Configuration
-* **Actor:** As a Procurement Data Specialist (SAP_BR_BUPA_MASTER_SPECIALIST)
-* **Action:** I want a customizing cross-reference table to map Purchasing Organization and Document Type to target Adobe Form templates, branding logos, and output channels
-* **Benefit:** so that purchase order documents automatically inherit the appropriate legal layout, branding assets, and transmission channels without hardcoded program logic
+### [STORY-002] - Enforce Release Strategy Reset on PO Limit Item (Category B) Value Increases
+* **Epic Group:** Procurement Spend Governance
+* **Actor:** Operational Purchaser (SAP_BR_PURCHASER)
+* **Action:** have the system validate Item Category B Overall Limit increases against approved Expected Value thresholds and reset PO release status when limits are increased post-approval
+* **Benefit:** post-approval spend threshold circumvention is eliminated, enforcing strict fiscal governance and corporate financial delegation of authority
 
 #### Acceptance Criteria
 
 ## SAP Components
-- SAP Modules: MM-PUR (Purchasing), BC-SRV-OUT (Output Management)
-- Transactions / Apps: SM30 (Table Maintenance), View Maintenance V_ZTXA_XREF
-- Custom Table: ZTXA_XREF (Client-dependent, Delivery Class 'C')
-- Authorization Object: S_TABU_DIS with authorization group '&NC&'
+- SAP Modules: MM-PUR, MM-PUR-PO
+- Fiori App IDs: App ID F0842A - Manage Purchase Orders, App ID F2229 - My Inbox (All Approvals)
+- Standard Business Objects / APIs: BUS2012, BAdI BADI_ME_PROCESS_PO_CUST (Methods: PROCESS_ITEM, CHECK)
+- Key Database Tables & Fields: EKKO (FRGKE, PROCSTAT), EKPO (EPSTP, NETWR, ZWERT), ESUH (LIMIT, EXP_VALUE)
 
 ## Acceptance Criteria (Given-When-Then)
-Scenario 1: Successful creation and activation of cross-reference routing mapping
-- Given a Procurement Data Specialist has authorization to maintain customizing tables
-- When they access table ZTXA_XREF and add an entry for Purchasing Organization '1010' and Document Type 'NB' with Logo ID 'BRAND_A_LOGO', Form Layout 'Z_FORM_SRV_PO', Medium 'EMAIL', and Active Flag 'X'
-- And clicks Save within a customizing transport request
-- Then the record is successfully stored in table ZTXA_XREF and is immediately available for runtime dispatch lookup.
+Scenario 1: Creation of Limit Item with Equal Values
+- Given an Operational Purchaser creates a new Purchase Order with Document Type 'NB' and Item Category 'B' (Limit)
+- When Expected Value (EKPO-ZWERT) is set to 50,000 USD and Overall Limit (ESUH-LIMIT) is set to 50,000 USD
+- Then the PO Net Value (EKPO-NETWR) is assigned as 50,000 USD and standard release strategy thresholds evaluate commitment at 50,000 USD.
 
-Scenario 2: Validation of mandatory key and layout fields
-- Given a Procurement Data Specialist creates a new entry in ZTXA_XREF
-- When they enter Purchasing Organization '1010' and Document Type 'NB' but leave Form Layout Name blank
-- And attempt to save
-- Then the maintenance dialog rejects the save with a validation error indicating that 'FORM_LAYOUT_NAME' is mandatory for active configurations.
+Scenario 2: Post-Approval Limit Increase Forces Release Reset
+- Given an Item Category B Purchase Order has been fully approved with release indicator set to 'Released'
+- When an Operational Purchaser modifies the PO in ME22N / F0842A, increasing Overall Limit (ESUH-LIMIT) from 50,000 USD to 75,000 USD while Expected Value remains 50,000 USD
+- Then BAdI BADI_ME_PROCESS_PO_CUST intercepts the save event, resets release indicator EKKO-FRGKE to unapproved ('B'/'X'), sets PO output status to pending, and displays informational message: 'Overall limit change exceeds approved spend commitment. Release reset.'
+
+Scenario 3: Boundary Limit Modification within Approved Tolerance
+- Given an approved PO with Overall Limit 50,000 USD and Expected Value 50,000 USD
+- When the purchaser modifies administrative text or non-spend delivery attributes without altering spend limits
+- Then the release status remains 'Released' and no release strategy workflow is re-triggered.
 
 ## Dependencies
-- DDIC domain and data elements created for ZTXA_LOGO_ID and ZTXA_FORM_LAYOUT.
-- Transport route configured between development and quality assurance tenants.
+- PO Release Strategy configured with classification characteristics for total order value (CEKKO-GNETW).
+- BAdI BADI_ME_PROCESS_PO_CUST active and assigned to development package Z_PROC_EXT.
 
 ## Definition of Ready (DoR)
-- Data dictionary schema for ZTXA_XREF finalized with check tables T024E (EKORG) and T161 (BSART).
-- Transport request allocated and SM30 maintenance view generated.
+- Functional approval workflow criteria signed off by corporate finance delegation of authority authority.
+- Configured release groups, release codes, and release strategies in customizing client.
+- Pre-existing service master data and limit item categories enabled for company code 1010.
 
 ## Definition of Done (DoD)
-- Table ZTXA_XREF active in DDIC with Delivery Class 'C'.
-- Authorization checks verified for unauthorized users (read-only vs write access).
-- Initial routing entries populated in QA staging environment.
+- ABAP implementation of BAdI BADI_ME_PROCESS_PO_CUST verified via automated ABAP Unit test classes covering both positive, boundary, and negative spend updates.
+- Release reset logic confirmed end-to-end in S/4HANA QA environment with workflow inbox notification updates verified.
+- Zero degradation to standard material line item PO processing.
 
 #### Clean Core Compliance & Architecture
 
 ## Technical Notes
-- Delivery Class: C (Customizing Table), Data Class APPL2.
-- Foreign Key Relationships: EKORG bound to T024E, BSART bound to T161.
-- Maintenance View: Custom maintenance view with standard lock management (VIEW_MAINTENANCE_CALL).
+- Implemented via standard released developer extensibility hook BADI_ME_PROCESS_PO_CUST.
+- In method PROCESS_ITEM, read limit details via interface IF_PURCHASE_ORDER_ITEM_MM.
+- Validation logic checks: IF ls_item_data-epstp = 'B' AND ls_limit_data-limit > ls_limit_data-exp_value. In method CHECK, append error/warning messages using interface IF_MESSAGE_CONTAINER.
 
 ## Clean Core Compliance & Architecture
-- Customizing table maintained in customer namespace (ZTXA*).
-- Adheres to clean core extensibility guidelines by decoupling routing rules from core application logic.
+- Avoids direct modifications to SAP core table structures (EKKO, EKPO, ESUH) or core code in include ZXM06U43 (old user exits).
+- Uses exclusively public released interfaces (IF_PURCHASE_ORDER_MM, IF_PURCHASE_ORDER_ITEM_MM) compliant with S/4HANA Cloud extensibility standards.
 
 *Status: Approved and peer-validated.*
 
 ---
 
-### [STORY-003-9962] - Automated Dynamic Output Determination and Fallback Dispatch Engine via S/4HANA Output Control
-* **Epic Group:** Automated Document Dispatch Framework
-* **Actor:** As an S/4HANA Integration Developer
-* **Action:** I want to implement BAdI APOC_DISPATCH_DOCUMENT to dynamically evaluate ZTXA_XREF and dispatch purchase orders with target Adobe layouts, logos, and channels, including default fallback routines
-* **Benefit:** so that purchase orders are automatically delivered to suppliers with accurate corporate branding and layouts, ensuring guaranteed delivery even if configuration mappings are missing
+### [STORY-003] - Implement S/4HANA Output Determination BAdI with Dynamic Layout Lookup and Robust Fallback
+* **Epic Group:** Procurement Document Output
+* **Actor:** Purchasing Administrator (SAP_BR_ADMINISTRATOR)
+* **Action:** dynamically resolve Adobe Form layout, corporate logo ID, and dispatch channel from custom table ZTXA_XREF during PO output issuance, applying automated fallback parameters if no record is found
+* **Benefit:** multi-entity brand layouts and print forms are dispatched without manual user selection, while built-in fallback rules prevent order dispatch aborts during transaction processing
 
 #### Acceptance Criteria
 
 ## SAP Components
-- SAP Modules: BC-SRV-OUT (Output Management), MM-PUR
-- Fiori App: App ID F2229 - Output Parameter Determination
-- BAdI Definition: APOC_DISPATCH_DOCUMENT / IF_BADI_APOC_DISPATCH
-- API Classes: CL_APOC_OUTPUT_API, Application Log Object 'OUTPUT_PO'
-- Fallback Defaults: Logo 'DEFAULT_LOGO', Layout 'Z_STANDARD_PO_FORM', Medium 'EMAIL'
+- SAP Modules: Cross-Application Components (CA-GTF-OC), MM-PUR
+- Fiori App IDs: App ID F0842A - Manage Purchase Orders, App ID F2065 - Output Parameter Determination
+- Standard APIs / Classes: CL_APOC_OUTPUT_API, BAdI BADI_APOC_OUTPUT_DETERMINATION
+- Custom Tables / Logs: ZTXA_XREF, Application Log Object 'APOC_OR_MESSAGES'
 
 ## Acceptance Criteria (Given-When-Then)
-Scenario 1: Dynamic selection of layout and logo based on ZTXA_XREF match
-- Given a purchase order is approved with EKORG = '1010' and BSART = 'NB'
-- And an active record exists in ZTXA_XREF mapping EKORG '1010' and BSART 'NB' to Logo 'BRAND_A_LOGO' and Form 'Z_FORM_SRV_PO'
-- When the output determination framework triggers BAdI APOC_DISPATCH_DOCUMENT
-- Then CL_APOC_OUTPUT_API=>CREATE_OUTPUT_ITEM creates an output item utilizing Form Template 'Z_FORM_SRV_PO' and Logo ID 'BRAND_A_LOGO' with channel 'EMAIL'.
+Scenario 1: Dynamic Layout and Logo Resolution from Mapping Table
+- Given a Purchase Order is approved for Purchasing Org '1010' and Document Type 'NB'
+- And an active entry exists in table ZTXA_XREF for (1010, NB) with Logo 'LOGO_US_CORP' and Form Layout 'ZPO_LIMIT_LAYOUT_US'
+- When the output determination hook is executed by the S/4HANA Output Control framework
+- Then the output item is generated with Form Layout 'ZPO_LIMIT_LAYOUT_US' and Logo 'LOGO_US_CORP'.
 
-Scenario 2: Graceful fallback when ZTXA_XREF configuration is missing (EXP-002)
-- Given a purchase order is approved with EKORG = '9999' and BSART = 'ZSPO' which does not exist in ZTXA_XREF
-- When the output determination framework executes the dynamic channel determination logic
-- Then the system applies default fallback assets: Logo 'DEFAULT_LOGO', Form 'Z_STANDARD_PO_FORM', Channel 'EMAIL'
-- And creates an entry in Application Log (SLG1) under Object 'OUTPUT_PO' with a warning status indicating missing mapping.
+Scenario 2: Fallback Execution when Mapping Entry is Missing
+- Given a Purchase Order is approved for Purchasing Org '9999' and Document Type 'NB'
+- And no matching record exists in table ZTXA_XREF for tuple ('9999', 'NB')
+- When the output determination hook queries table ZTXA_XREF and encounters sy-subrc <> 0
+- Then the system automatically applies fallback parameters: Logo ID 'DEFAULT_LOGO', Form Layout 'ZSTANDARD_PURCHASE_ORDER', and Dispatch Medium 'MAIL'
+- And writes a warning message to application log APOC_OR_MESSAGES indicating fallback profile applied.
+
+Scenario 3: Database Exception Handling
+- Given a transient database lock or SQL exception occurs during table ZTXA_XREF query
+- When the exception CX_SY_OPEN_SQL_ERROR is caught
+- Then the system defaults to the baseline fallback profile without rolling back PO document commit or terminating user transaction.
 
 ## Dependencies
-- Custom table ZTXA_XREF deployed and populated.
-- ADS (Adobe Document Services) communication RFC active.
+- Standard S/4HANA Output Control (CA-GTF-OC) configured and active for Purchase Orders.
+- Adobe Document Services (ADS) active and licensed.
+- Default fallback Adobe Form layout 'ZSTANDARD_PURCHASE_ORDER' deployed in target environment.
 
 ## Definition of Ready (DoR)
-- Target Adobe Forms (Z_STANDARD_PO_FORM, Z_FORM_SRV_PO) compiled and accessible in ADS.
-- Output determination parameters registered in BRFplus / Output Management framework.
+- ADS connection verified via program FP_CHECK_DESTINATION_SERVICE.
+- Sample PDF templates configured for corporate brand variants.
+- Table ZTXA_XREF populated with verified master records for active business units.
 
 ## Definition of Done (DoD)
-- ABAP Class ZCL_STP_PO_LIMIT_OUTPUT implementing IF_BADI_APOC_DISPATCH deployed.
-- ABAP Unit test suite achieving 100% statement coverage on fallback branch (sy-subrc <> 0).
-- Verification in transaction SLG1 confirming warning logs for unmapped EKORG/BSART combinations.
+- BAdI BADI_APOC_OUTPUT_DETERMINATION implementation active and tested across all valid Purchasing Orgs.
+- Negative fallback test cases successfully executed and verified in application log.
+- Code inspected via ABAP Test Cockpit (ATC) with zero high-priority findings.
 
 #### Clean Core Compliance & Architecture
 
 ## Technical Notes
-- Interface: IF_BADI_APOC_DISPATCH method DISPATCH_DOCUMENT.
-- Standard API: CL_APOC_OUTPUT_API=>CREATE_OUTPUT_ITEM for cloud-compliant output creation.
-- Logging: CL_BALI_LOG (Clean Core Application Log API) or standard SLG1 Object OUTPUT_PO.
+- Implemented in BAdI BADI_APOC_OUTPUT_DETERMINATION method DETERMINE_CHANNEL / DETERMINE_FORM.
+- Database query accesses ZTXA_XREF using ABAP SQL with clean error handling: TRY. SELECT SINGLE ... CATCH cx_sy_open_sql_error INTO DATA(lx_db). ... ENDTRY.
+- Logs system diagnostics via standard class CL_BAL_LOGGING or output log integration APOC_OR_MESSAGES.
 
 ## Clean Core Compliance & Architecture
-- Uses standard S/4HANA Output Management extensibility BAdIs without legacy NAST modifications.
-- All database queries utilize modern ABAP SQL syntax with strict host variable escaping.
+- Adheres strictly to standard S/4HANA Output Control framework (CA-GTF-OC) without altering NAST or using obsolete SAPscript/SmartForms.
+- Invokes standard public APIs (CL_APOC_OUTPUT_API) ensuring 100% upgrade safety for future S/4HANA Cloud upgrades.
 
 *Status: Approved and peer-validated.*
 
 ---
 
-### [STORY-004-9962] - Supplier Master Business Partner EDI Communication Preference Resolution and Exception Handling
-* **Epic Group:** Automated Document Dispatch Framework
-* **Actor:** As a Supplier Integration Specialist (SAP_BR_BUPA_MASTER_SPECIALIST)
-* **Action:** I want the output dispatch logic to evaluate Business Partner Supplier Role FLVN01 communication preferences and route to EDI when configured, falling back to email when unconfigured
-* **Benefit:** so that vendor EDI transmission preferences are respected while preventing dispatch transmission failures through automated fallback
+### [STORY-004] - Automate Supplier Master (BP FLVN01) Electronic Data Interchange (EDI) Channel Override
+* **Epic Group:** Procurement Document Output
+* **Actor:** Purchasing Administrator (SAP_BR_ADMINISTRATOR)
+* **Action:** evaluate Business Partner supplier profile communication parameters in role FLVN01 during output channel determination to automatically override table dispatch medium to EDI when configured
+* **Benefit:** integrated suppliers automatically receive electronic purchase orders without manual intervention, while non-EDI vendors receive automated SMTP PDF emails seamlessly
 
 #### Acceptance Criteria
 
 ## SAP Components
-- SAP Modules: MM-PUR, LO-MD-BP (Business Partner Master Data)
-- Business Partner Role: FLVN01 (Supplier - Purchasing Org Data)
-- Partner Tables / APIs: LFM1 (Vendor Master Purchasing Data), CL_MD_BP_MAINTAIN, BAPI_BUPA_ADDRESS
-- Output Engine: CL_APOC_OUTPUT_API, Exception Class CX_APOC_DISPATCH_FAILURE
-- Message Class: ZTX_STP_MSG, Warning 005
+- SAP Modules: Cross-Application Components (Master Data / Output Control), MM-PUR
+- Fiori App IDs: App ID BP - Maintain Business Partner, App ID F0842A - Manage Purchase Orders
+- S/4HANA CDS Views / APIs: CDS View I_BusinessPartnerSupplier, Class CL_MD_BP_MAINTAIN
+- Roles & Partner Functions: BP Role FLVN01 (Supplier), Partner Function VN (Vendor)
 
 ## Acceptance Criteria (Given-When-Then)
-Scenario 1: Override to EDI transmission for suppliers with EDI preference maintained
-- Given a purchase order is committed for vendor 'V10023' with Purchasing Organization '1010'
-- And the Business Partner role FLVN01 for vendor 'V10023' has communication preference REC_COMM_TYPE = 'EDI'
-- When the output channel determination executes
-- Then the dispatch channel is overridden from 'EMAIL' to 'EDI' and dispatched via XML payload to the electronic data interchange port.
+Scenario 1: EDI Override for Configured Digital Supplier
+- Given a Purchase Order created for Supplier 'SUPP01' who is maintained in BP Role 'FLVN01' with EDI Partner indicator active
+- And table ZTXA_XREF specifies Dispatch Medium 'MAIL' for the corresponding Purchasing Org and Document Type
+- When the output determination logic processes the PO communication channel
+- Then the system overrides the dispatch channel from 'MAIL' to 'EDI' and routes the payload via the standard electronic interface.
 
-Scenario 2: Fallback to SMTP Email when EDI routing is unconfigured or defective (EXP-003)
-- Given a purchase order is committed for vendor 'V10099' with communication preference 'EDI' in role FLVN01
-- But the partner EDI transmission profile in WE20 is missing or defective
-- When the output dispatch engine attempts EDI channel routing
-- Then the system catches the routing exception, triggers fallback to standard SMTP email, writes warning ZTX_STP_MSG 005 to the application log, and sets output status to 'To Be Processed (Manual Review)'.
+Scenario 2: Preservation of SMTP Dispatch for Standard Non-EDI Supplier
+- Given a Purchase Order created for Supplier 'SUPP02' who is maintained in BP Role 'FLVN01' with valid email address but no EDI profile
+- And table ZTXA_XREF specifies Dispatch Medium 'MAIL'
+- When output channel determination executes
+- Then the dispatch medium remains 'MAIL' and the generated PDF is dispatched to the supplier's primary email address.
+
+Scenario 3: Missing Supplier Communication Exception Handling
+- Given a Purchase Order created for Supplier 'SUPP03' whose BP Master record in role FLVN01 has neither email address nor EDI profile
+- When output channel determination evaluates the supplier profile
+- Then the PO document is saved successfully, but the Output Item status is flagged as 'To Be Checked' (Error) with message ERR_BP_COMM_NOT_FOUND recorded in Output Log APOC_OR_MESSAGES.
 
 ## Dependencies
-- Business Partner CVI synchronization active for role FLVN01.
-- EDI partner profiles maintained in WE20 for target electronic trading partners.
+- Customer-Vendor Integration (CVI) synchronization operational between BP and ERP vendor master.
+- Communication systems and communication arrangements configured for EDI integration scenarios.
+- BP Role FLVN01 active with maintained partner communication data.
 
 ## Definition of Ready (DoR)
-- Test vendor master records established with both EDI and standard email communication preferences.
-- S/4HANA Business Partner CDS views (I_SupplierPurchasingOrg) verified for clean-core read access.
+- Electronic Data Interchange logical ports and destination agreements maintained in QA environment.
+- Test Business Partners created covering: (a) EDI active, (b) Email active, (c) Neither active.
 
 ## Definition of Done (DoD)
-- Channel override logic implemented within ZCL_STP_PO_LIMIT_OUTPUT=>DETERMINE_OUTPUT_CHANNEL.
-- Integration test validated for EDI-enabled vendor and non-EDI vendor.
-- Exception handling for missing EDI profile verified with warning message ZTX_STP_MSG 005.
+- Dynamic override logic integrated into BADI_APOC_OUTPUT_DETERMINATION implementation.
+- End-to-end integration verified: EDI IDoc/SOAP payload generation confirmed for EDI partner; SMTP PDF spool confirmed for standard partner.
+- Security scan passed and functional sign-off obtained from procurement operations.
 
 #### Clean Core Compliance & Architecture
 
 ## Technical Notes
-- Master Data Access: Read supplier purchasing data using CDS view I_SupplierPurchasingOrg or standard API rather than direct uncontrolled SELECT on LFM1.
-- Communication Field: REC_COMM_TYPE evaluated for 'EDI'.
-- Exception Handling: Catch CX_APOC_DISPATCH_FAILURE and log warning using SAP-released log APIs.
+- Supplier data queried using released CDS view I_BusinessPartnerSupplier or standard class CL_MD_BP_MAINTAIN.
+- Direct SELECT queries against legacy tables LFA1 or LFB1 are strictly prohibited under Clean Core guidelines.
+- Logic extracts BP GUID and resolves communication preferences via released CDS view I_Supplier.
 
 ## Clean Core Compliance & Architecture
-- Complies with Clean Core Tier 1 guidelines by reading Business Partner data via released master data interfaces.
-- Robust exception handling ensures document output does not crash purchase order commit transactions.
+- Eliminates legacy customer modifications in include programs or user exits (e.g., EXIT_SAPLLMDE_001).
+- Uses SAP S/4HANA released Core Data Services (CDS) views (I_BusinessPartnerSupplier) to ensure decoupling of database persistence and business application layers.
 
 *Status: Approved and peer-validated.*
 
